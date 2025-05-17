@@ -1,0 +1,16 @@
+import pandas as pd
+
+df = pd.read_csv("implicit_hate_v1_stg3_posts.tsv", sep="\t")
+
+# Keep only necessary columns
+df = df[["post_text", "class_label"]]
+
+# Rename for clarity
+df.rename(columns={"post_text": "text", "class_label": "label"}, inplace=True)
+
+# Convert to binary labels
+df["label"] = df["label"].map(lambda x: 1 if x in ["implicit_hate", "explicit_hate"] else 0)
+
+# Save
+df.to_csv("latent_hatred.csv", index=False)
+print("✅ Saved to latent_hatred.csv")
