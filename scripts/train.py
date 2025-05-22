@@ -56,14 +56,14 @@ def main(args):
     model = MultiTaskBERT().to(device)
     optimizer = AdamW(model.parameters(), lr=args.lr)
 
-    hate_train = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_sample_train.csv", split="train")
-    hate_val   = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_sample_train.csv", split="val")
+    hate_train = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_train.csv", split="train")
+    hate_val   = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_train.csv", split="val")
 
-    stereo_train = StereoSetDataset(f"{args.dataset_dir}/stereoset_sample_train.csv", split="train")
-    stereo_val   = StereoSetDataset(f"{args.dataset_dir}/stereoset_sample_train.csv", split="val")
+    stereo_train = StereoSetDataset(f"{args.dataset_dir}/stereoset_train.csv", split="train")
+    stereo_val   = StereoSetDataset(f"{args.dataset_dir}/stereoset_train.csv", split="val")
 
-    sarcasm_train = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_sample_train.csv", split="train")
-    sarcasm_val   = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_sample_train.csv", split="val")
+    sarcasm_train = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_train.csv", split="train")
+    sarcasm_val   = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_train.csv", split="val")
 
     dataloaders_train = {
         "main": DataLoader(hate_train, batch_size=args.batch_size, shuffle=True),
