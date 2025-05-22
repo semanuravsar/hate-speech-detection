@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from models.multitask_bert import MultiTaskBERT
 from scripts.dataset_loaders import LatentHatredDataset, StereoSetDataset
+from scripts.dataset_loaders import ISarcasmDataset
 from scripts.utils import save_checkpoint, load_checkpoint
 from sklearn.metrics import accuracy_score, f1_score
 
@@ -53,26 +54,33 @@ def evaluate(model, dataloaders, device):
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MultiTaskBERT().to(device)
-    optimizer = AdamW(model.parameters(), lr=2e-5)
+    optimizer = AdamW(model.parameters(), lr=args.lr)
 
-    hate_train = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_train.csv", split="train")
-    hate_val   = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_train.csv", split="val")
+    hate_train = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_sample_train.csv", split="train")
+    hate_val   = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_sample_train.csv", split="val")
 
-    stereo_train = StereoSetDataset(f"{args.dataset_dir}/stereoset_train.csv", split="train")
-    stereo_val   = StereoSetDataset(f"{args.dataset_dir}/stereoset_train.csv", split="val")
+    stereo_train = StereoSetDataset(f"{args.dataset_dir}/stereoset_sample_train.csv", split="train")
+    stereo_val   = StereoSetDataset(f"{args.dataset_dir}/stereoset_sample_train.csv", split="val")
+
+    sarcasm_train = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_sample_train.csv", split="train")
+    sarcasm_val   = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_sample_train.csv", split="val")
 
     dataloaders_train = {
         "main": DataLoader(hate_train, batch_size=args.batch_size, shuffle=True),
-        "stereo": DataLoader(stereo_train, batch_size=args.batch_size, shuffle=True)
+        "stereo": DataLoader(stereo_train, batch_size=args.batch_size, shuffle=True),
+        "sarcasm": DataLoader(sarcasm_train, batch_size=args.batch_size, shuffle=True)
     }
     dataloaders_val = {
         "main": DataLoader(hate_val, batch_size=args.batch_size),
-        "stereo": DataLoader(stereo_val, batch_size=args.batch_size)
+        "stereo": DataLoader(stereo_val, batch_size=args.batch_size),
+        "sarcasm": DataLoader(sarcasm_val, batch_size=args.batch_size)
     }
+
 
     task_weights = {
         "main": args.main_weight,
-        "stereo": args.stereo_weight
+        "stereo": args.stereo_weight,
+        "sarcasm": args.sarcasm_weight
     }
 
     start_epoch = 0
@@ -94,10 +102,13 @@ if __name__ == "__main__":
     parser.add_argument("--dataset_dir", type=str, required=True)
     parser.add_argument("--checkpoint_path", type=str, default="checkpoint.pt")
     parser.add_argument("--resume", action="store_true")
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--main_weight", type=float, default=1.0)
-    parser.add_argument("--stereo_weight", type=float, default=0.3)
+    parser.add_argument("--stereo_weight", type=float, default=0.2)
+    parser.add_argument("--sarcasm_weight", type=float, default=0.2)
+    parser.add_argument("--lr", type=float, default=2e-5, help="Learning rate")
+    parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
     args = parser.parse_args()
 
     main(args)
