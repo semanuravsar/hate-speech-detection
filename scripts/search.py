@@ -3,6 +3,11 @@ import itertools
 import time
 import pandas as pd
 import torch
+
+import sys
+import os
+sys.path.append(os.path.expanduser("~/a"))
+
 from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score, f1_score
 
@@ -37,33 +42,34 @@ def evaluate(model, dataloaders, device):
 def run_experiments():
     from scripts.train import main  # avoid circular import
 
-    learning_rates   = [1e-5, 2e-5]
+    learning_rates   = [2e-5, 3e-5, 5e-5]
     dropouts         = [0.1, 0.3]
-    batch_sizes      = [8]
-    epochs_list      = [3, 5]
+    batch_sizes      = [8, 32, 64]
+    epochs_list      = [5]
     main_weights     = [1.0]
-    stereo_weights   = [0.2, 0.5]
-    sarcasm_weights  = [0.2, 0.5]
+    stereo_weights   = [0.1, 0.25, 0.5, 1.0]
+    sarcasm_weights  = [0.1, 0.25, 0.5, 1.0]
+    weights   = [0.1, 0.25, 0.5, 1.0, 2.0]
 
     best_score = 0
     best_config = None
     results = []
 
-    for lr, dropout, batch_size, epochs, main_w, stereo_w, sarcasm_w in itertools.product(
-        learning_rates, dropouts, batch_sizes, epochs_list, main_weights, stereo_weights, sarcasm_weights
+    for lr, dropout, batch_size, epochs, main_w, aux_w in itertools.product(
+        learning_rates, dropouts, batch_sizes, epochs_list, main_weights, weights
     ):
-        print(f"\n🚀 Running: lr={lr}, dropout={dropout}, bs={batch_size}, ep={epochs}, mw={main_w}, sw={stereo_w}, sarw={sarcasm_w}")
+        print(f"\n🚀 Running: lr={lr}, dropout={dropout}, bs={batch_size}, ep={epochs}, mw={main_w}, sw={aux_w}, sarw={aux_w}")
         start_time = time.time()
 
         args = argparse.Namespace(
-            dataset_dir="datasets",
-            checkpoint_path=f"checkpoint_lr{lr}_do{dropout}_bs{batch_size}_ep{epochs}_mw{main_w}_sw{stereo_w}_sarw{sarcasm_w}.pt",
+            dataset_dir="/home/avsar/a/datasets",
+            checkpoint_path=f"checkpoint_lr{lr}_do{dropout}_bs{batch_size}_ep{epochs}_mw{main_w}_sw{aux_w}_sarw{aux_w}.pt",
             resume=False,
             batch_size=batch_size,
             epochs=epochs,
             main_weight=main_w,
-            stereo_weight=stereo_w,
-            sarcasm_weight=sarcasm_w,
+            stereo_weight=aux_w,
+            sarcasm_weight=aux_w,
             lr=lr,
             dropout=dropout
         )
@@ -98,8 +104,8 @@ def run_experiments():
                 "batch_size": batch_size,
                 "epochs": epochs,
                 "main_weight": main_w,
-                "stereo_weight": stereo_w,
-                "sarcasm_weight": sarcasm_w,
+                "stereo_weight": aux_w,
+                "sarcasm_weight": aux_w,
                 "main_f1": metrics["main"]["f1"],
                 "stereo_f1": metrics["stereo"]["f1"],
                 "sarcasm_f1": metrics["sarcasm"]["f1"],
@@ -111,7 +117,7 @@ def run_experiments():
                 best_config = {
                     "lr": lr, "dropout": dropout, "batch_size": batch_size,
                     "epochs": epochs, "main_weight": main_w,
-                    "stereo_weight": stereo_w, "sarcasm_weight": sarcasm_w
+                    "stereo_weight": aux_w, "sarcasm_weight": aux_w
                 }
 
             print(f"✅ Finished in {time.time() - start_time:.1f}s")

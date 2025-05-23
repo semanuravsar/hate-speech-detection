@@ -2,6 +2,11 @@ import argparse
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
+
+import sys
+import os
+sys.path.append(os.path.expanduser("~/a"))
+
 from models.multitask_bert import MultiTaskBERT
 from scripts.dataset_loaders import LatentHatredDataset, StereoSetDataset
 from scripts.dataset_loaders import ISarcasmDataset
@@ -12,8 +17,18 @@ def train(model, dataloaders, optimizer, task_weights, device):
     model.train()
     total_loss = 0.0
 
-    for task, loader in dataloaders.items():
-        for batch in loader:
+    # Initialize iterators
+    task_iters = {task: iter(loader) for task, loader in dataloaders.items()}
+    active_tasks = set(dataloaders.keys())
+
+    while active_tasks:
+        for task in list(active_tasks):  # make a copy since we'll modify it
+            try:
+                batch = next(task_iters[task])
+            except StopIteration:
+                active_tasks.remove(task)
+                continue  # skip to next task
+
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
@@ -25,6 +40,7 @@ def train(model, dataloaders, optimizer, task_weights, device):
             optimizer.step()
 
             total_loss += loss.item()
+
     return total_loss
 
 @torch.no_grad()
@@ -76,7 +92,6 @@ def main(args):
         "sarcasm": DataLoader(sarcasm_val, batch_size=args.batch_size)
     }
 
-
     task_weights = {
         "main": args.main_weight,
         "stereo": args.stereo_weight,
@@ -87,13 +102,15 @@ def main(args):
     if args.resume:
         start_epoch = load_checkpoint(model, optimizer, args.checkpoint_path)
 
+    print("Starting epoch loop...", flush=True)
+
     for epoch in range(start_epoch, args.epochs):
         loss = train(model, dataloaders_train, optimizer, task_weights, device)
-        print(f"Epoch {epoch+1}/{args.epochs} - Loss: {loss:.4f}")
+        print(f"Epoch {epoch+1}/{args.epochs} - Loss: {loss:.4f}", flush=True)
 
         val = evaluate(model, dataloaders_val, device)
         for task, m in val.items():
-            print(f"[{task}] Accuracy: {m['accuracy']:.4f}, F1: {m['f1']:.4f}")
+            print(f"[{task}] Accuracy: {m['accuracy']:.4f}, F1: {m['f1']:.4f}", flush=True)
 
         save_checkpoint(model, optimizer, epoch+1, args.checkpoint_path)
 
