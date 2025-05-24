@@ -5,14 +5,54 @@ from torch.optim import AdamW
 
 import sys
 import os
-sys.path.append(os.path.expanduser("~/a"))
+sys.path.append(os.path.expanduser("~/codes-v2"))
 
 from models.multitask_bert import MultiTaskBERT
 from scripts.dataset_loaders import LatentHatredDataset, StereoSetDataset
+from scripts.dataset_loaders import ImplicitFineHateDataset
 from scripts.dataset_loaders import ISarcasmDataset
 from scripts.utils import save_checkpoint, load_checkpoint
 from sklearn.metrics import accuracy_score, f1_score
 
+
+from itertools import cycle, islice
+import random
+
+def train(model, dataloaders, optimizer, task_weights, device):
+    model.train()
+    total_loss = 0.0
+
+    # Create iterators for each dataloader
+    task_iters = {task: iter(loader) for task, loader in dataloaders.items()}
+    task_names = list(dataloaders.keys())
+    max_batches = max(len(loader) for loader in dataloaders.values())
+
+    # Cycle through tasks in random order, balanced across all
+    for _ in range(max_batches * len(task_names)):
+        task = random.choice(task_names)
+        try:
+            batch = next(task_iters[task])
+        except StopIteration:
+            # Reset iterator if exhausted
+            task_iters[task] = iter(dataloaders[task])
+            batch = next(task_iters[task])
+
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels = batch["labels"].to(device)
+
+        optimizer.zero_grad()
+        logits = model(input_ids, attention_mask, task=task)
+        loss = torch.nn.functional.cross_entropy(logits, labels)
+        (task_weights[task] * loss).backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    return total_loss
+
+
+""""
 def train(model, dataloaders, optimizer, task_weights, device):
     model.train()
     total_loss = 0.0
@@ -42,6 +82,7 @@ def train(model, dataloaders, optimizer, task_weights, device):
             total_loss += loss.item()
 
     return total_loss
+"""""
 
 @torch.no_grad()
 def evaluate(model, dataloaders, device):
@@ -81,21 +122,27 @@ def main(args):
     sarcasm_train = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_train.csv", split="train")
     sarcasm_val   = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_train.csv", split="val")
 
+    fine_train = ImplicitFineHateDataset(f"{args.dataset_dir}/implicit_fine_labels_train.csv", split="train")
+    fine_val   = ImplicitFineHateDataset(f"{args.dataset_dir}/implicit_fine_labels_train.csv", split="val")
+
     dataloaders_train = {
         "main": DataLoader(hate_train, batch_size=args.batch_size, shuffle=True),
         "stereo": DataLoader(stereo_train, batch_size=args.batch_size, shuffle=True),
-        "sarcasm": DataLoader(sarcasm_train, batch_size=args.batch_size, shuffle=True)
+        "sarcasm": DataLoader(sarcasm_train, batch_size=args.batch_size, shuffle=True),
+        "implicit_fine": DataLoader(fine_train, batch_size=args.batch_size, shuffle=True)
     }
     dataloaders_val = {
         "main": DataLoader(hate_val, batch_size=args.batch_size),
         "stereo": DataLoader(stereo_val, batch_size=args.batch_size),
-        "sarcasm": DataLoader(sarcasm_val, batch_size=args.batch_size)
+        "sarcasm": DataLoader(sarcasm_val, batch_size=args.batch_size),
+        "implicit_fine": DataLoader(fine_val, batch_size=args.batch_size)
     }
 
     task_weights = {
         "main": args.main_weight,
         "stereo": args.stereo_weight,
-        "sarcasm": args.sarcasm_weight
+        "sarcasm": args.sarcasm_weight,
+        "implicit_fine": args.implicit_fine_weight
     }
 
     start_epoch = 0
@@ -124,6 +171,7 @@ if __name__ == "__main__":
     parser.add_argument("--main_weight", type=float, default=1.0)
     parser.add_argument("--stereo_weight", type=float, default=0.2)
     parser.add_argument("--sarcasm_weight", type=float, default=0.2)
+    parser.add_argument("--implicit_fine_weight", type=float, default=0.2)
     parser.add_argument("--lr", type=float, default=2e-5, help="Learning rate")
     parser.add_argument("--dropout", type=float, default=0.1, help="Dropout rate")
     args = parser.parse_args()

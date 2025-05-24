@@ -11,6 +11,7 @@ class MultiTaskBERT(nn.Module):
         self.classifier_main = nn.Linear(hidden_size, 3)
         self.classifier_stereo = nn.Linear(hidden_size, 3)
         self.classifier_sarcasm = nn.Linear(hidden_size, 2)
+        self.classifier_implicit_fine = nn.Linear(hidden_size, 7)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, input_ids, attention_mask, task):
@@ -23,5 +24,7 @@ class MultiTaskBERT(nn.Module):
             return self.classifier_stereo(pooled)
         elif task == "sarcasm":
             return self.classifier_sarcasm(pooled)
+        elif task == "implicit_fine":
+            return self.classifier_implicit_fine(pooled)
         else:
             raise ValueError(f"Unknown task: {task}")

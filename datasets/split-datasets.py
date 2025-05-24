@@ -19,4 +19,15 @@ train_sarc, test_sarc = train_test_split(df_sarcasm, test_size=0.2, random_state
 train_sarc.to_csv("datasets/isarcasm_sample_train.csv", index=False)
 test_sarc.to_csv("datasets/isarcasm_sample_test.csv", index=False)
 
+# Split implicit fine-grained hate dataset
+df_fine = pd.read_csv("datasets/implicit_fine_labels.csv")
+train_fine, test_fine = train_test_split(
+    df_fine,
+    test_size=0.2,
+    random_state=42,
+    stratify=df_fine["label_id"]
+)
+train_fine.to_csv("datasets/implicit_fine_labels_train.csv", index=False)
+test_fine.to_csv("datasets/implicit_fine_labels_test.csv", index=False)
+
 print("✅ Datasets successfully split into train and test.")
