@@ -217,9 +217,9 @@ class FinalMultiTaskModelTrainer:
 
         task_weights = {
             "main": self.best_hyperparams['main_weight'],
-            "stereo": self.best_hyperparams['aux_weight_stereo'],
-            "sarcasm": self.best_hyperparams['aux_weight_sarcasm'],
-            "implicit_fine": self.best_hyperparams['aux_weight_implicit_fine']
+            "stereo": self.best_hyperparams['stereo_weight'],
+            "sarcasm": self.best_hyperparams['sarcasm_weight'],
+            "implicit_fine": self.best_hyperparams['implicit_fine_weight']
         }
 
         # Use 'epochs_per_trial' from best_hyperparams as the number of epochs for final training
