@@ -376,7 +376,7 @@ def main():
         description="Train final model with best hyperparameters on full dataset"
     )
     
-    parser.add_argument("--dataset_path", type=str, default="/home/altemir/hate-speech-detection/datasets/latent_hatred_3class.csv",
+    parser.add_argument("--dataset_path", type=str, default="/home/altemir/Project/scripts/single_task_bert/latent_hatred_3class.csv",
                        help="Path to the dataset CSV file")
     parser.add_argument("--search_results", type=str,
                        default="hyperparameter_search/analysis.json",

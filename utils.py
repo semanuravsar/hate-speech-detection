@@ -98,8 +98,8 @@ class CheckpointManager:
         }
 
         # Always save epoch-specific checkpoint (for early stopping evaluation)
-        epoch_path = self.experiment_dir / f"checkpoint_epoch_{epoch}.pt"
-        torch.save(checkpoint_data, epoch_path)
+        #epoch_path = self.experiment_dir / f"checkpoint_epoch_{epoch}.pt"
+        #torch.save(checkpoint_data, epoch_path)
             
         # Save best checkpoint
         if is_best and metrics:

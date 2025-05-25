@@ -159,7 +159,7 @@ if __name__ == "__main__":
     print("Testing dataset splitting functionality...")
     
     # Example usage
-    csv_path = "/home/altemir/hate-speech-detection/datasets/latent_hatred_3class.csv"  # Update this path
+    csv_path = "/home/altemir/Project/scripts/single_task_bert/latent_hatred_3class.csv"  # Update this path
     
     try:
         train_ds, val_ds, test_ds = verify_stratification(csv_path)

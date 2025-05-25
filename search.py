@@ -197,8 +197,9 @@ class HyperparameterSearchManager:
             # Check if this is the best configuration
             if final_metrics['f1'] > self.best_score:
                 self.best_score = final_metrics['f1']
-                self.best_config = {**config, 'dropout': self.fixed_dropout, 'weight_decay': self.fixed_weight_decay,'batch_size': self.batch_size}
                 self.best_epoch = training_results.get('best_epoch')  # 🔑 NEW: Store best epoch globally
+                self.best_config = {**config, 'dropout': self.fixed_dropout, 'weight_decay': self.fixed_weight_decay,'batch_size': self.batch_size,'epoch': self.best_epoch}
+                
                 
                 print(f"   🎯 NEW BEST CONFIGURATION!")
                 print(f"      F1: {self.best_score:.4f}")
@@ -212,7 +213,7 @@ class HyperparameterSearchManager:
         # Final analysis
         self.analyze_results()
         
-        return self.best_config, self.best_score, self.best_epoch
+        return self.best_config, self.best_score
 
     
     def save_results(self):
@@ -321,7 +322,7 @@ class HyperparameterSearchManager:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hyperparameter search for BERT model")
     parser.add_argument("--dataset_path", type=str, 
-                       default="/home/altemir/hate-speech-detection/datasets/latent_hatred_3class.csv",
+                       default="/home/altemir/Project/scripts/single_task_bert/latent_hatred_3class.csv",
                        help="Path to the dataset CSV file")
     parser.add_argument("--results_dir", type=str, default="hyperparameter_search",
                        help="Directory to save results")

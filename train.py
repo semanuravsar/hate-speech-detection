@@ -255,7 +255,7 @@ if __name__ == "__main__":
     
     # Dataset arguments
     parser.add_argument("--dataset_path", type=str, 
-                        default="/home/altemir/hate-speech-detection/datasets/latent_hatred_3class.csv")
+                        default="/home/altemir/Project/scripts/single_task_bert/latent_hatred_3class.csv")
     
     # Training arguments
     parser.add_argument("--batch_size", type=int, default=16, 

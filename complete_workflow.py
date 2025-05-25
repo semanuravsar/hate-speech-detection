@@ -121,7 +121,7 @@ class MLWorkflowOrchestrator:
             str(search_dir)
         )
         
-        best_config, best_score, best_epoch = search_manager.run_search()
+        best_config, best_score = search_manager.run_search()
         
         # Save search results to workflow state
         self.workflow_state['hyperparameter_search'] = {
@@ -351,7 +351,7 @@ def main():
         description="Complete ML workflow: dataset validation → hyperparameter search → final training → test evaluation"
     )
     
-    parser.add_argument("--dataset_path", type=str,default="/home/altemir/hate-speech-detection/datasets/latent_hatred_3class.csv",
+    parser.add_argument("--dataset_path", type=str,default="/home/altemir/Project/scripts/single_task_bert/latent_hatred_3class.csv",
                        help="Path to the dataset CSV file")
     parser.add_argument("--results_dir", type=str, default="/home/altemir/Project/scripts/single_task_bert/ml_workflow_results",
                        help="Base directory for all workflow results")
