@@ -171,12 +171,12 @@ class FinalMultiTaskModelTrainer:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using device: {device}")
 
-        model = MultiTaskBERT(dropout_rate=self.best_hyperparams['dropout']).to(device)
+        model = MultiTaskBERT(dropout_rate=self.best_hyperparams['dropout']).to(device) # 'dropout' key is correct
         optimizer = AdamW(
-            model.parameters(),
-            lr=self.best_hyperparams['learning_rate'],
-            weight_decay=self.best_hyperparams['weight_decay']
-        )
+        model.parameters(),
+        lr=self.best_hyperparams['lr'], # <<<<<<<<<<<< CORRECTED KEY TO 'lr'
+        weight_decay=self.best_hyperparams['weight_decay'] # 'weight_decay' key is correct
+    )
 
         print(f"\n📊 Loading and combining train+val datasets for all tasks...")
         dataloaders_final_train = {}
@@ -301,13 +301,14 @@ if __name__ == '__main__':
         # which should include keys like 'dropout', 'learning_rate', 'batch_size', 'epochs_per_trial',
         # 'main_weight', 'aux_weight_stereo', etc. AND 'weight_decay', 'num_workers'.
         # Ensure all necessary keys are present.
-        required_keys = ['dropout', 'learning_rate', 'weight_decay', 'batch_size', 'num_workers',
-                         'epochs', 'main_weight', 'aux_weight_stereo',
-                         'aux_weight_sarcasm', 'aux_weight_implicit_fine']
+        required_keys = ['dropout', 'lr', 'weight_decay', 'batch_size', 'num_workers', # Changed 'learning_rate' to 'lr'
+                         'epochs', 
+                         'main_weight', 'stereo_weight', # These are the arg names for weights
+                         'sarcasm_weight', 'implicit_fine_weight'] # These are the arg names for weights
         missing_keys = [k for k in required_keys if k not in best_hpo_params]
         if missing_keys:
-            print(f"ERROR: The best_hyperparams_json is missing required keys: {missing_keys}")
-            print(f"It should contain the full configuration used for the best trial, including fixed params like weight_decay and num_workers.")
+            print(f"ERROR: The best_hyperparams_json is missing required keys (should match HPO trial args): {missing_keys}")
+            print(f"It should contain the full configuration used for the best HPO trial's args_for_training_script.")
             sys.exit(1)
 
 

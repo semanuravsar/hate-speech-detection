@@ -143,18 +143,13 @@ class MultiTaskMLWorkflowOrchestrator:
         
         # This will include the dataset_root_dir from the orchestrator's init
         fixed_hpo_params_for_run = {
-        "dataset_root_dir": str(self.dataset_root_dir) # Use the orchestrator's dataset_root_dir
-        # You can add other fixed params here if search_v2.py should not define them
-        # e.g., "num_workers": 4 (if you want to set it from orchestrator)
+            "dataset_root_dir": str(self.dataset_root_dir)
+            # "num_workers": 4 # If you want to control this from orchestrator
         }
 
-        # Call the main HPO function from your search_v2.py
-        # It is expected to return: (best_overall_config_hpo, best_overall_score_hpo, best_overall_trial_best_epoch)
-        # This function should handle its own detailed file saving.
         best_hpo_config, best_hpo_score, _ = search_v2.run_experiments_with_single_task_hpo_features(
             hpo_output_base_dir=str(hpo_run_output_dir),
-            # Pass any fixed params if search_v2 expects them, e.g.,
-            fixed_params_for_hpo_run = {"dataset_root_dir": str(self.dataset_root_dir)}
+            fixed_params_for_hpo_run=fixed_hpo_params_for_run # Use the variable defined above
         )
 
         if not best_hpo_config:
