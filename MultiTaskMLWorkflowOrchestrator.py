@@ -42,8 +42,8 @@ try:
 
     # The search_v2.py script you want to adapt (the one containing run_experiments_with_single_task_hpo_features)
     # Let's assume it's directly importable as 'search_v2' for clarity
-    import search_v2 as search_v2 # Rename your search_v2.py to search_v2.py or adjust
-    from final_model_training_multitask import FinalMultiTaskModelTrainer
+    import scripts.search_v2 as search_v2  # Rename your search_v2.py to search_v2.py or adjust
+    from scripts.final_model_training_multitask import FinalMultiTaskModelTrainer
 
 except ImportError as e:
     print(f"ImportError: {e}. Ensure search_v2.py (with HPO logic) and final_model_training_multitask.py are accessible.")
@@ -109,7 +109,7 @@ class MultiTaskMLWorkflowOrchestrator:
         self.workflow_state['steps_completed_successfully'].append(step_name)
         self.workflow_state['current_step_being_executed'] = None # Clear current step
         self._log_step_status(step_name, "Completed Successfully.")
-        self_save_workflow_state()
+        self._save_workflow_state()
 
     def _save_workflow_state(self):
         state_file = self.workflow_run_dir / "workflow_orchestrator_state.json"
