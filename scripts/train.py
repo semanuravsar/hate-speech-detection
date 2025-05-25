@@ -16,6 +16,19 @@ import os
 # For HPO, search_v2.py handles sys.path
 # if __name__ == "__main__": # Add only if testing standalone
 #     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# --- START OF sys.path MODIFICATION ---
+# This ensures the script can find other modules (like 'models')
+# when run directly, and relative imports within 'scripts' work.
+current_script_path = os.path.abspath(__file__)
+# project_root is one level up from 'scripts' directory
+# scripts_dir = os.path.dirname(current_script_path) # This is the 'scripts' directory
+# project_root = os.path.dirname(scripts_dir)         # This is 'hate-speech-detection' (project root)
+# Simpler way to get project root if train.py is always in scripts/ which is in project_root/
+project_root = os.path.dirname(os.path.dirname(current_script_path))
+
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+# --- END OF sys.path MODIFICATION ---
 
 
 # Assuming utils.py is in the same 'scripts' package or accessible
@@ -31,7 +44,7 @@ TASK_CLASS_NAMES = {
     "main": ["not_hate", "implicit_hate", "explicit_hate"],
     "stereo": ["stereotype", "anti-stereotype", "unrelated"],
     "sarcasm": ["not_sarcasm", "sarcasm"],
-    "implicit_fine": ["grievance", "incitement", "inferiority", "irony", "stereotypical", "threatening", "other"],
+    "implicit_fine": ["incitement", "inferiority", "irony", "other", "stereotypical", "threatening", "white_grievance"],
 }
 PRIMARY_VALIDATION_TASK_NAME = "main" # Task whose metric will be optimized for "best_model" in this trial
 PRIMARY_METRIC_FOR_BEST_MODEL = "f1" # e.g., 'f1', 'accuracy' from the primary task
@@ -386,7 +399,7 @@ if __name__ == "__main__":
     
     # Mimic args that HPO would provide:
     parser.add_argument("--resume", action="store_true", help="Attempt to resume this standalone trial")
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=2) # Keep short for testing
     parser.add_argument("--lr", type=float, default=3e-5)
     parser.add_argument("--dropout", type=float, default=0.2, help="Dropout rate for MultiTaskBERT")

@@ -141,13 +141,20 @@ class MultiTaskMLWorkflowOrchestrator:
 
         self._log_step_status("Hyperparameter Search", f"Calling HPO script. Output base in: {hpo_run_output_dir}")
         
+        # This will include the dataset_root_dir from the orchestrator's init
+        fixed_hpo_params_for_run = {
+        "dataset_root_dir": str(self.dataset_root_dir) # Use the orchestrator's dataset_root_dir
+        # You can add other fixed params here if search_v2.py should not define them
+        # e.g., "num_workers": 4 (if you want to set it from orchestrator)
+        }
+
         # Call the main HPO function from your search_v2.py
         # It is expected to return: (best_overall_config_hpo, best_overall_score_hpo, best_overall_trial_best_epoch)
         # This function should handle its own detailed file saving.
         best_hpo_config, best_hpo_score, _ = search_v2.run_experiments_with_single_task_hpo_features(
-            hpo_output_base_dir=str(hpo_run_output_dir)
+            hpo_output_base_dir=str(hpo_run_output_dir),
             # Pass any fixed params if search_v2 expects them, e.g.,
-            # fixed_params_for_hpo_run = {"dataset_root_dir": str(self.dataset_root_dir)}
+            fixed_params_for_hpo_run = {"dataset_root_dir": str(self.dataset_root_dir)}
         )
 
         if not best_hpo_config:
@@ -173,9 +180,9 @@ class MultiTaskMLWorkflowOrchestrator:
         print(f"\n⚠️ CRITICAL WARNING: Test sets will be used for the FIRST and ONLY time! ⚠️")
 
         final_trainer = FinalMultiTaskModelTrainer(
-            dataset_root_dir_str=str(self.dataset_root_dir),
-            best_hyperparams_dict=best_hpo_config, # Pass the dict
-            final_model_output_dir_str=str(final_model_run_output_dir)
+            dataset_root_dir=str(self.dataset_root_dir),         # CORRECTED name
+            best_hyperparams_dict=best_hpo_config,
+            final_model_output_dir=str(final_model_run_output_dir) # CORRECTED name
         )
         final_test_metrics = final_trainer.run_final_training_and_evaluation()
 

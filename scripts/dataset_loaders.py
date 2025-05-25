@@ -16,8 +16,8 @@ class BaseTaskDatasetInMemorySplit(Dataset):
     def __init__(self,
                  original_data_path, # Path to the original, unsplit CSV
                  split="train",      # "train", "val", "test", or "all"
-                 train_ratio=0.7,    # Proportion for training
-                 val_ratio=0.15,     # Proportion for validation
+                 train_ratio=0.6,    # Proportion for training
+                 val_ratio=0.2,     # Proportion for validation
                  # test_ratio is implicitly 1.0 - train_ratio - val_ratio
                  random_state=42,
                  text_col="text",
@@ -133,8 +133,8 @@ class BaseTaskDatasetInMemorySplit(Dataset):
 
 # --- Task-Specific Dataset Classes ---
 # Define standard split ratios for consistency if not overridden
-DEFAULT_TRAIN_RATIO = 0.7
-DEFAULT_VAL_RATIO = 0.15
+DEFAULT_TRAIN_RATIO = 0.6
+DEFAULT_VAL_RATIO = 0.2
 # Test ratio is 1.0 - DEFAULT_TRAIN_RATIO - DEFAULT_VAL_RATIO
 
 class LatentHatredDataset(BaseTaskDatasetInMemorySplit):

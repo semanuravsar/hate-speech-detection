@@ -43,7 +43,7 @@ TASK_CLASS_NAMES = {
     "main": ["not_hate", "implicit_hate", "explicit_hate"],
     "stereo": ["stereotype", "anti-stereotype", "unrelated"],
     "sarcasm": ["not_sarcasm", "sarcasm"],
-    "implicit_fine": ["grievance", "incitement", "inferiority", "irony", "stereotypical", "threatening", "other"], # Example for ImplicitFineHate
+    "implicit_fine": ["incitement", "inferiority", "irony", "other", "stereotypical", "threatening", "white_grievance"], # Example for ImplicitFineHate
 }
 
 # --- Training Epoch function for Final Model ---
@@ -225,7 +225,7 @@ class FinalMultiTaskModelTrainer:
         # Use 'epochs_per_trial' from best_hyperparams as the number of epochs for final training
         # Or, if HPO returned a specific 'best_overall_trial_best_epoch', that could be used,
         # but often final training is done for the full duration defined by the best config.
-        num_final_epochs = self.best_hyperparams['epochs_per_trial'] 
+        num_final_epochs = self.best_hyperparams['epochs'] 
         
         print(f"\n🎯 Training final model for {num_final_epochs} epochs using combined train+val data...")
         final_model_training_history = []
@@ -302,7 +302,7 @@ if __name__ == '__main__':
         # 'main_weight', 'aux_weight_stereo', etc. AND 'weight_decay', 'num_workers'.
         # Ensure all necessary keys are present.
         required_keys = ['dropout', 'learning_rate', 'weight_decay', 'batch_size', 'num_workers',
-                         'epochs_per_trial', 'main_weight', 'aux_weight_stereo',
+                         'epochs', 'main_weight', 'aux_weight_stereo',
                          'aux_weight_sarcasm', 'aux_weight_implicit_fine']
         missing_keys = [k for k in required_keys if k not in best_hpo_params]
         if missing_keys:
