@@ -8,22 +8,20 @@ import os
 from scripts.utils import preprocess_text, encode_text
 
 class LatentHatredDataset(Dataset):
+<<<<<<< Updated upstream
     def __init__(self, path, split="train", val_ratio=0.1, random_state=42):
+=======
+    def __init__(self, path):
+>>>>>>> Stashed changes
         df = pd.read_csv(path)
-
-        if split == "train" or split == "val":
-            from sklearn.model_selection import train_test_split
-            train_df, val_df = train_test_split(
-                df, test_size=val_ratio, random_state=random_state, stratify=df["label_id"]
-            )
-            df = train_df if split == "train" else val_df
-        elif split == "test":
-            pass
-        else:
-            raise ValueError("split must be one of: 'train', 'val', or 'test'")
+        
+        # Keep only non-hate (0) and implicit hate (1)
+        df = df[df["label_id"] != 2].copy()
+        df["label_id"] = df["label_id"].map({0: 0, 1: 1})  # Re-map labels to binary
 
         self.texts = [preprocess_text(text) for text in df["text"]]
-        self.labels = df["label_id"].tolist()
+        self.labels = df["label_id"].astype(int).tolist()
+
 
     def __getitem__(self, idx):
         enc = encode_text(self.texts[idx])
@@ -37,19 +35,12 @@ class LatentHatredDataset(Dataset):
         return len(self.labels)
 
 class StereoSetDataset(Dataset):
+<<<<<<< Updated upstream
     def __init__(self, path, split="train", val_ratio=0.1, random_state=42):
+=======
+    def __init__(self, path):
+>>>>>>> Stashed changes
         df = pd.read_csv(path)
-
-        if split == "train" or split == "val":
-            from sklearn.model_selection import train_test_split
-            train_df, val_df = train_test_split(
-                df, test_size=val_ratio, random_state=random_state, stratify=df["label"]
-            )
-            df = train_df if split == "train" else val_df
-        elif split == "test":
-            pass
-        else:
-            raise ValueError("split must be one of: 'train', 'val', or 'test'")
 
         self.texts = [preprocess_text(r['statement']) for _, r in df.iterrows()]
         self.labels = df["label"].tolist()
@@ -64,3 +55,42 @@ class StereoSetDataset(Dataset):
 
     def __len__(self):
         return len(self.labels)
+<<<<<<< Updated upstream
+=======
+
+class ISarcasmDataset(Dataset):
+    def __init__(self, path):
+        df = pd.read_csv(path)
+
+        self.texts = [preprocess_text(text) for text in df["text"]]
+        self.labels = df["label"].astype(int).tolist()
+
+    def __getitem__(self, idx):
+        enc = encode_text(self.texts[idx])
+        return {
+            "input_ids": enc["input_ids"].squeeze(0),
+            "attention_mask": enc["attention_mask"].squeeze(0),
+            "labels": torch.tensor(self.labels[idx])
+        }
+
+    def __len__(self):
+        return len(self.labels)
+
+class ImplicitFineHateDataset(Dataset):
+    def __init__(self, path):
+        df = pd.read_csv(path)
+
+        self.texts = [preprocess_text(text) for text in df["text"]]
+        self.labels = df["label_id"].astype(int).tolist()
+
+    def __getitem__(self, idx):
+        enc = encode_text(self.texts[idx])
+        return {
+            "input_ids": enc["input_ids"].squeeze(0),
+            "attention_mask": enc["attention_mask"].squeeze(0),
+            "labels": torch.tensor(self.labels[idx])
+        }
+
+    def __len__(self):
+        return len(self.labels)
+>>>>>>> Stashed changes

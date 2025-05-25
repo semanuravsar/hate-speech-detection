@@ -8,8 +8,16 @@ class MultiTaskBERT(nn.Module):
         self.bert = BertModel.from_pretrained(model_name)
         hidden_size = self.bert.config.hidden_size
 
+<<<<<<< Updated upstream
         self.classifier_main = nn.Linear(hidden_size, 3)    # Hate speech
         self.classifier_stereo = nn.Linear(hidden_size, 3)  # Stereotypical bias
+=======
+        self.classifier_main = nn.Linear(hidden_size, 2)
+        self.classifier_stereo = nn.Linear(hidden_size, 3)
+        self.classifier_sarcasm = nn.Linear(hidden_size, 2)
+        self.classifier_implicit_fine = nn.Linear(hidden_size, 7)
+        self.dropout = nn.Dropout(dropout)
+>>>>>>> Stashed changes
 
     def forward(self, input_ids, attention_mask, task):
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
