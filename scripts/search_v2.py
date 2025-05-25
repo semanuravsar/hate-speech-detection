@@ -36,11 +36,11 @@ def run_experiments_with_single_task_hpo_features(
     # --- Define Search Space (similar to HyperparameterSearchManager.define_search_space) ---
     search_space_config = {
         "learning_rate": [3e-5], #[1e-5, 2e-5, 3e-5, 5e-5],
-        "dropout": [0.2, 0.3],
-        "batch_size": [8, 16],
-        "epochs_per_trial": [3, 4, 5], # This is 'max_epochs' from single-task HPO
+        "dropout": [0.2], #[0.2, 0.3],
+        "batch_size": [32], #[8, 16],
+        "epochs_per_trial": [1], # [3, 4, 5], # This is 'max_epochs' from single-task HPO
         "main_weight": [1.0], # Often fixed
-        "aux_task_weight": [0.3, 0.5, 1.0] # A single weight for all aux tasks
+        "aux_task_weight": [1.0] #[0.3, 0.5, 1.0] # A single weight for all aux tasks
     }
     # Combine with any fixed parameters for the HPO run
     # These fixed params are analogous to self.fixed_dropout etc. in single-task HPO
