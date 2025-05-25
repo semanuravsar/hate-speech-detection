@@ -8,7 +8,7 @@ import os
 from scripts.utils import preprocess_text, encode_text
 
 class LatentHatredDataset(Dataset):
-    def __init__(self, path, split="train", val_ratio=0.1, random_state=42):
+    def __init__(self, path, split="train", val_ratio=0.2, random_state=42):
         df = pd.read_csv(path)
 
         if split == "train" or split == "val":
@@ -37,7 +37,7 @@ class LatentHatredDataset(Dataset):
         return len(self.labels)
 
 class StereoSetDataset(Dataset):
-    def __init__(self, path, split="train", val_ratio=0.1, random_state=42):
+    def __init__(self, path, split="train", val_ratio=0.2, random_state=42):
         df = pd.read_csv(path)
 
         if split == "train" or split == "val":
@@ -66,7 +66,7 @@ class StereoSetDataset(Dataset):
         return len(self.labels)
 
 class ISarcasmDataset(Dataset):
-    def __init__(self, path, split="train", val_ratio=0.1, random_state=42):
+    def __init__(self, path, split="train", val_ratio=0.2, random_state=42):
         df = pd.read_csv(path)
 
         if split == "train" or split == "val":
@@ -95,7 +95,7 @@ class ISarcasmDataset(Dataset):
         return len(self.labels)
 
 class ImplicitFineHateDataset(Dataset):
-    def __init__(self, path, split="train", val_ratio=0.1, random_state=42):
+    def __init__(self, path, split="train", val_ratio=0.2, random_state=42):
         df = pd.read_csv(path)
 
         if split == "train" or split == "val":

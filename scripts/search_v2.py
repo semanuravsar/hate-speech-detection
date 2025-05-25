@@ -48,16 +48,15 @@ def evaluate(model, dataloaders, device):
 
     return metrics
 
-
 def run_experiments():
     from scripts.train import main  # avoid circular import
 
     learning_rates   = [3e-5]
     dropouts         = [0.3]
-    batch_sizes      = [8, 32]
+    batch_sizes      = [8]
     epochs_list      = [1, 2, 3, 4]
     main_weights     = [1.0]
-    weights   = [0.1, 0.5, 1.0, 2.0]
+    weights   = [0.5, 1.0, 2.0]
 
     best_score = 0
     best_config = None
