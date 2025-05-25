@@ -2,7 +2,6 @@ import argparse
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
 import time
 
@@ -12,45 +11,6 @@ import os
 from single_task_bert import SingleTaskBERT
 from dataset_loaders import LatentHatredDataset
 from utils import CheckpointManager, compute_comprehensive_metrics, print_metrics_summary, save_metrics_to_file
-
-
-class EarlyStopping:
-    """Early stopping to prevent overfitting"""
-    
-    def __init__(self, patience=5, min_delta=0.001, restore_best_weights=True):
-        self.patience = patience
-        self.min_delta = min_delta
-        self.restore_best_weights = restore_best_weights
-        self.best_score = None
-        self.counter = 0
-        self.best_weights = None
-        
-    def __call__(self, val_score, model):
-        if self.best_score is None:
-            self.best_score = val_score
-            self.save_checkpoint(model)
-        elif val_score < self.best_score + self.min_delta:
-            self.counter += 1
-            if self.counter >= self.patience:
-                if self.restore_best_weights:
-                    self.restore_checkpoint(model)
-                return True
-        else:
-            self.best_score = val_score
-            self.counter = 0
-            self.save_checkpoint(model)
-        return False
-    
-    def save_checkpoint(self, model):
-        """Save model weights in memory"""
-        device = next(model.parameters()).device
-        self.best_weights = {k: v.cpu().clone() for k, v in model.state_dict().items()}
-    
-    def restore_checkpoint(self, model):
-        """Restore best model weights"""
-        if self.best_weights is not None:
-            device = next(model.parameters()).device
-            model.load_state_dict({k: v.to(device) for k, v in self.best_weights.items()})
 
 
 def train_epoch(model, dataloader, optimizer, device, epoch_num=None, verbose=True):
@@ -137,7 +97,7 @@ def train_model(args, experiment_name=None):
     
     # Initialize checkpoint manager
     checkpoint_manager = CheckpointManager(
-        base_dir="checkpoints", 
+        base_dir="/home/altemir/Project/scripts/single_task_bert/checkpoints", 
         experiment_name=experiment_name
     )
     
@@ -145,20 +105,8 @@ def train_model(args, experiment_name=None):
     model = SingleTaskBERT(dropout=args.dropout).to(device)
     optimizer = AdamW(
         model.parameters(), 
-        lr=args.lr, 
-        weight_decay=getattr(args, 'weight_decay', 0.01)
-    )
-    
-    # Learning rate scheduler
-    scheduler = ReduceLROnPlateau(
-        optimizer, mode='max', factor=0.5, patience=2, verbose=True, min_lr=1e-7
-    )
-    
-    # Early stopping
-    early_stopping = EarlyStopping(
-        patience=getattr(args, 'patience', 5),
-        min_delta=getattr(args, 'min_delta', 0.001),
-        restore_best_weights=True
+        lr=args.lr,
+        weight_decay=args.weight_decay,
     )
 
     # Load datasets
@@ -221,9 +169,6 @@ def train_model(args, experiment_name=None):
         print("📊 Evaluating...")
         val_metrics = evaluate_model(model, val_loader, device, class_names)
         
-        # Learning rate scheduling
-        scheduler.step(val_metrics['f1'])
-        current_lr = optimizer.param_groups[0]['lr']
         
         # Log epoch results
         epoch_time = time.time() - epoch_start_time
@@ -234,7 +179,6 @@ def train_model(args, experiment_name=None):
         print(f"   Val Precision: {val_metrics['precision']:.4f}")
         print(f"   Val Recall: {val_metrics['recall']:.4f}")
         print(f"   Val F1: {val_metrics['f1']:.4f}")
-        print(f"   Learning Rate: {current_lr:.2e}")
         
         # Track training history
         history_entry = {
@@ -245,7 +189,7 @@ def train_model(args, experiment_name=None):
             'val_precision': val_metrics['precision'],
             'val_recall': val_metrics['recall'],
             'val_f1': val_metrics['f1'],
-            'learning_rate': current_lr,
+            'learning_rate': args.lr,
             'epoch_time': epoch_time
         }
         training_history.append(history_entry)
@@ -264,20 +208,9 @@ def train_model(args, experiment_name=None):
             epoch=epoch + 1,
             metrics=val_metrics,
             config=config_dict,
-            is_best=is_best,
-            save_periodic=(epoch + 1) % 5 == 0
+            is_best=is_best
         )
         
-        # Early stopping check
-        if early_stopping(val_metrics['f1'], model):
-            print(f"\n🛑 Early stopping triggered after {epoch+1} epochs")
-            print(f"Best validation F1: {early_stopping.best_score:.4f}")
-            break
-        
-        # Cleanup old checkpoints periodically
-        if (epoch + 1) % 10 == 0:
-            checkpoint_manager.cleanup_old_checkpoints(keep_last_n=3)
-    
     # Training completed
     total_time = time.time() - start_time
     print(f"\n🎉 Training completed in {total_time/60:.1f} minutes")
@@ -331,22 +264,15 @@ if __name__ == "__main__":
                        help="Number of training epochs")
     parser.add_argument("--lr", type=float, default=2e-5, 
                        help="Learning rate")
-    parser.add_argument("--weight_decay", type=float, default=0.01, 
-                       help="Weight decay for regularization")
     parser.add_argument("--dropout", type=float, default=0.1, 
                        help="Dropout rate")
     
-    # Early stopping arguments
-    parser.add_argument("--patience", type=int, default=5, 
-                       help="Early stopping patience")
-    parser.add_argument("--min_delta", type=float, default=0.001, 
-                       help="Minimum improvement for early stopping")
     
     # Checkpoint arguments
     parser.add_argument("--resume", action="store_true", 
                        help="Resume training from checkpoint")
-    parser.add_argument("--resume_from", type=str, default="latest", 
-                       help="Which checkpoint to resume from (best/latest/epoch_N)")
+    parser.add_argument("--resume_from", type=str, default="best", 
+                       help="Which checkpoint to resume from (best/epoch_N)")
     parser.add_argument("--checkpoint_path", type=str, default="checkpoint.pt", 
                        help="Legacy checkpoint path (for backward compatibility)")
     

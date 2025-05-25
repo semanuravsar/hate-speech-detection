@@ -51,7 +51,7 @@ class CheckpointManager:
     Advanced checkpoint management system that prevents overwriting and tracks best models
     """
     
-    def __init__(self, base_dir="checkpoints", experiment_name=None):
+    def __init__(self, base_dir="/home/altemir/Project/scripts/single_task_bert/checkpoints", experiment_name=None):
         """
         Args:
             base_dir: Base directory for all checkpoints
@@ -96,17 +96,11 @@ class CheckpointManager:
             "metrics": metrics or {},
             "config": config or {}
         }
-        
-        # Always save latest checkpoint
-        latest_path = self.experiment_dir / "checkpoint_latest.pt"
-        torch.save(checkpoint_data, latest_path)
-        
-        # Save periodic checkpoint (doesn't overwrite)
-        if save_periodic and epoch % 5 == 0:
-            periodic_path = self.experiment_dir / f"checkpoint_epoch_{epoch:03d}.pt"
-            torch.save(checkpoint_data, periodic_path)
-            print(f"💾 Periodic checkpoint saved: {periodic_path.name}")
-        
+
+        # Always save epoch-specific checkpoint (for early stopping evaluation)
+        epoch_path = self.experiment_dir / f"checkpoint_epoch_{epoch}.pt"
+        torch.save(checkpoint_data, epoch_path)
+            
         # Save best checkpoint
         if is_best and metrics:
             best_path = self.experiment_dir / "checkpoint_best.pt"
@@ -124,7 +118,8 @@ class CheckpointManager:
                     "timestamp": timestamp
                 }, f, indent=2)
         
-        return latest_path
+        return epoch_path
+    
     
     def load_checkpoint(self, model, optimizer=None, checkpoint_type="best"):
         """
@@ -133,23 +128,14 @@ class CheckpointManager:
         Args:
             model: PyTorch model
             optimizer: Optimizer (optional)
-            checkpoint_type: "best", "latest", or specific epoch number
+            checkpoint_type: "best", or specific epoch number (e.g., 1, 2, 3)
         """
         if checkpoint_type == "best":
             checkpoint_path = self.experiment_dir / "checkpoint_best.pt"
-        elif checkpoint_type == "latest":
-            checkpoint_path = self.experiment_dir / "checkpoint_latest.pt"
         elif isinstance(checkpoint_type, int):
-            checkpoint_path = self.experiment_dir / f"checkpoint_epoch_{checkpoint_type:03d}.pt"
+            checkpoint_path = self.experiment_dir / f"checkpoint_epoch_{checkpoint_type}.pt"
         else:
             checkpoint_path = Path(checkpoint_type)  # Direct path
-        
-        if not checkpoint_path.exists():
-            available = self.list_available_checkpoints()
-            raise FileNotFoundError(
-                f"Checkpoint not found: {checkpoint_path}\n"
-                f"Available checkpoints: {[c['name'] for c in available]}"
-            )
         
         try:
             checkpoint = torch.load(checkpoint_path, map_location='cpu')
@@ -170,82 +156,7 @@ class CheckpointManager:
         except Exception as e:
             raise RuntimeError(f"Failed to load checkpoint {checkpoint_path}: {e}")
     
-    def list_available_checkpoints(self):
-        """List all available checkpoints for this experiment"""
-        checkpoints = []
-        
-        # Best checkpoint
-        best_path = self.experiment_dir / "checkpoint_best.pt"
-        if best_path.exists():
-            try:
-                ckpt = torch.load(best_path, map_location='cpu')
-                checkpoints.append({
-                    'name': 'best',
-                    'path': best_path,
-                    'epoch': ckpt.get('epoch', 0),
-                    'metrics': ckpt.get('metrics', {}),
-                    'timestamp': ckpt.get('timestamp', 'unknown')
-                })
-            except:
-                pass
-        
-        # Latest checkpoint
-        latest_path = self.experiment_dir / "checkpoint_latest.pt"
-        if latest_path.exists():
-            try:
-                ckpt = torch.load(latest_path, map_location='cpu')
-                checkpoints.append({
-                    'name': 'latest',
-                    'path': latest_path,
-                    'epoch': ckpt.get('epoch', 0),
-                    'metrics': ckpt.get('metrics', {}),
-                    'timestamp': ckpt.get('timestamp', 'unknown')
-                })
-            except:
-                pass
-        
-        # Periodic checkpoints
-        for periodic_path in sorted(self.experiment_dir.glob("checkpoint_epoch_*.pt")):
-            try:
-                ckpt = torch.load(periodic_path, map_location='cpu')
-                epoch_num = int(periodic_path.stem.split('_')[-1])
-                checkpoints.append({
-                    'name': f'epoch_{epoch_num}',
-                    'path': periodic_path,
-                    'epoch': ckpt.get('epoch', epoch_num),
-                    'metrics': ckpt.get('metrics', {}),
-                    'timestamp': ckpt.get('timestamp', 'unknown')
-                })
-            except:
-                pass
-        
-        return sorted(checkpoints, key=lambda x: x['epoch'])
     
-    def cleanup_old_checkpoints(self, keep_last_n=3):
-        """Remove old periodic checkpoints to save disk space"""
-        periodic_files = list(self.experiment_dir.glob("checkpoint_epoch_*.pt"))
-        
-        if len(periodic_files) <= keep_last_n:
-            return
-        
-        # Sort by epoch number
-        def extract_epoch(path):
-            try:
-                return int(path.stem.split('_')[-1])
-            except:
-                return 0
-        
-        periodic_files.sort(key=extract_epoch)
-        
-        # Remove old checkpoints
-        files_to_remove = periodic_files[:-keep_last_n]
-        for file_path in files_to_remove:
-            try:
-                file_path.unlink()
-                print(f"🗑️  Removed old checkpoint: {file_path.name}")
-            except OSError as e:
-                print(f"Warning: Could not remove {file_path.name}: {e}")
-
 
 def compute_comprehensive_metrics(y_true, y_pred, class_names=None, average='macro'):
     """
