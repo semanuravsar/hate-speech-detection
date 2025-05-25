@@ -37,7 +37,7 @@ TASK_CLASS_NAMES = {
     "main": ["not_hate", "implicit_hate", "explicit_hate"],
     "stereo": ["stereotype", "anti-stereotype", "unrelated"],
     "sarcasm": ["not_sarcasm", "sarcasm"],
-    "implicit_fine": ["grievance", "incitement", "inferiority", "irony", "stereotypical", "threatening ", "other"],
+    "implicit_fine": ["grievance", "incitement", "inferiority", "irony", "stereotypical", "threatening", "other"],
 }
 PRIMARY_VALIDATION_TASK_NAME = "main" # Task whose metric will be optimized for "best_model" in this trial
 PRIMARY_METRIC_FOR_BEST_MODEL = "f1" # e.g., 'f1', 'accuracy' from the primary task
@@ -207,18 +207,32 @@ def run_training_trial(args, trial_log_name_for_hpo=None):
         weight_decay=args.weight_decay # Using weight_decay from args
     )
 
-    # --- Datasets and Dataloaders (mimicking single-task, adapted for multi-task) ---
+    # --- Datasets and Dataloaders ---
     print(f"\n📊 Loading datasets from: {args.dataset_dir} ...")
-    # Train datasets (ensure paths and splits are correct)
-    hate_train = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_train.csv", split="train")
-    stereo_train = StereoSetDataset(f"{args.dataset_dir}/stereoset_train.csv", split="train")
-    sarcasm_train = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_train.csv", split="train")
-    fine_train = ImplicitFineHateDataset(f"{args.dataset_dir}/implicit_fine_labels_train.csv", split="train")
-    # Validation datasets (ensure these _val.csv files exist and paths are correct)
-    hate_val = LatentHatredDataset(f"{args.dataset_dir}/latent_hatred_3class_val.csv", split="val")
-    stereo_val = StereoSetDataset(f"{args.dataset_dir}/stereoset_val.csv", split="val")
-    sarcasm_val = ISarcasmDataset(f"{args.dataset_dir}/isarcasm_val.csv", split="val")
-    fine_val = ImplicitFineHateDataset(f"{args.dataset_dir}/implicit_fine_labels_val.csv", split="val")
+
+    # Paths to ORIGINAL (or ORIGINAL SAMPLE) CSVs
+    # Construct these based on whether HPO runs on samples or full data
+    # Example: If HPO uses sample files
+    hate_original_path = f"{args.dataset_dir}/latent_hatred_3class.csv"
+    stereo_original_path = f"{args.dataset_dir}/stereoset.csv"
+    sarcasm_original_path = f"{args.dataset_dir}/isarcasm.csv"
+    fine_original_path = f"{args.dataset_dir}/implicit_fine_labels.csv" # Make sure this sample exists
+
+    # If HPO uses full files, change paths accordingly:
+    # hate_original_path = f"{args.dataset_dir}/latent_hatred_3class.csv"
+    # ... etc.
+
+    # Train datasets (Dataset classes will handle the split)
+    hate_train = LatentHatredDataset(hate_original_path, split="train")
+    stereo_train = StereoSetDataset(stereo_original_path, split="train")
+    sarcasm_train = ISarcasmDataset(sarcasm_original_path, split="train")
+    fine_train = ImplicitFineHateDataset(fine_original_path, split="train")
+
+    # Validation datasets
+    hate_val = LatentHatredDataset(hate_original_path, split="val")
+    stereo_val = StereoSetDataset(stereo_original_path, split="val")
+    sarcasm_val = ISarcasmDataset(sarcasm_original_path, split="val")
+    fine_val = ImplicitFineHateDataset(fine_original_path, split="val")
 
     dataloaders_train = {
         "main": DataLoader(hate_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers),
@@ -226,13 +240,13 @@ def run_training_trial(args, trial_log_name_for_hpo=None):
         "sarcasm": DataLoader(sarcasm_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers),
         "implicit_fine": DataLoader(fine_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     }
-    dataloaders_val = { # For internal validation within this trial
+    dataloaders_val = {
         "main": DataLoader(hate_val, batch_size=args.batch_size, num_workers=args.num_workers),
         "stereo": DataLoader(stereo_val, batch_size=args.batch_size, num_workers=args.num_workers),
         "sarcasm": DataLoader(sarcasm_val, batch_size=args.batch_size, num_workers=args.num_workers),
         "implicit_fine": DataLoader(fine_val, batch_size=args.batch_size, num_workers=args.num_workers)
     }
-    print("Datasets loaded.")
+    print("Datasets loaded for HPO trial (with in-memory splitting).")
 
     task_weights = { # From args, as in original multi-task train
         "main": args.main_weight, "stereo": args.stereo_weight,

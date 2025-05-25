@@ -43,7 +43,7 @@ TASK_CLASS_NAMES = {
     "main": ["not_hate", "implicit_hate", "explicit_hate"],
     "stereo": ["stereotype", "anti-stereotype", "unrelated"],
     "sarcasm": ["not_sarcasm", "sarcasm"],
-    "implicit_fine": ["grievance", "incitement", "inferiority", "irony", "stereotypical", "threatening ", "other"], # Example for ImplicitFineHate
+    "implicit_fine": ["grievance", "incitement", "inferiority", "irony", "stereotypical", "threatening", "other"], # Example for ImplicitFineHate
 }
 
 # --- Training Epoch function for Final Model ---
@@ -183,27 +183,34 @@ class FinalMultiTaskModelTrainer:
         num_workers = self.best_hyperparams.get('num_workers', 0) # Get from best_hyperparams
         batch_size_final = self.best_hyperparams['batch_size']
 
+        # Paths to ORIGINAL FULL CSVs
+        main_original_full_path = f"{self.dataset_root_dir}/latent_hatred_3class.csv"
+        stereo_original_full_path = f"{self.dataset_root_dir}/stereoset.csv"
+        sarcasm_original_full_path = f"{self.dataset_root_dir}/isarcasm.csv"
+        fine_original_full_path = f"{self.dataset_root_dir}/implicit_fine_labels.csv"
+
         # Main Task (Latent Hatred)
-        main_train_ds = LatentHatredDataset(f"{self.dataset_root_dir}/latent_hatred_3class_train.csv", split="train")
-        main_val_ds = LatentHatredDataset(f"{self.dataset_root_dir}/latent_hatred_3class_val.csv", split="val")
+        # Dataset classes will handle the split. We load "train" and "val" splits separately.
+        main_train_ds = LatentHatredDataset(main_original_full_path, split="train")
+        main_val_ds = LatentHatredDataset(main_original_full_path, split="val")
         main_combined_ds = ConcatDataset([main_train_ds, main_val_ds])
         dataloaders_final_train["main"] = DataLoader(main_combined_ds, batch_size=batch_size_final, shuffle=True, num_workers=num_workers)
 
         # StereoSet Task
-        stereo_train_ds = StereoSetDataset(f"{self.dataset_root_dir}/stereoset_train.csv", split="train")
-        stereo_val_ds = StereoSetDataset(f"{self.dataset_root_dir}/stereoset_val.csv", split="val")
+        stereo_train_ds = StereoSetDataset(stereo_original_full_path, split="train")
+        stereo_val_ds = StereoSetDataset(stereo_original_full_path, split="val")
         stereo_combined_ds = ConcatDataset([stereo_train_ds, stereo_val_ds])
         dataloaders_final_train["stereo"] = DataLoader(stereo_combined_ds, batch_size=batch_size_final, shuffle=True, num_workers=num_workers)
         
         # ISarcasm Task
-        sarcasm_train_ds = ISarcasmDataset(f"{self.dataset_root_dir}/isarcasm_train.csv", split="train")
-        sarcasm_val_ds = ISarcasmDataset(f"{self.dataset_root_dir}/isarcasm_val.csv", split="val")
+        sarcasm_train_ds = ISarcasmDataset(sarcasm_original_full_path, split="train")
+        sarcasm_val_ds = ISarcasmDataset(sarcasm_original_full_path, split="val")
         sarcasm_combined_ds = ConcatDataset([sarcasm_train_ds, sarcasm_val_ds])
         dataloaders_final_train["sarcasm"] = DataLoader(sarcasm_combined_ds, batch_size=batch_size_final, shuffle=True, num_workers=num_workers)
 
         # ImplicitFineHate Task
-        fine_train_ds = ImplicitFineHateDataset(f"{self.dataset_root_dir}/implicit_fine_labels_train.csv", split="train")
-        fine_val_ds = ImplicitFineHateDataset(f"{self.dataset_root_dir}/implicit_fine_labels_val.csv", split="val")
+        fine_train_ds = ImplicitFineHateDataset(fine_original_full_path, split="train")
+        fine_val_ds = ImplicitFineHateDataset(fine_original_full_path, split="val")
         fine_combined_ds = ConcatDataset([fine_train_ds, fine_val_ds])
         dataloaders_final_train["implicit_fine"] = DataLoader(fine_combined_ds, batch_size=batch_size_final, shuffle=True, num_workers=num_workers)
         print("Train+Val datasets loaded and combined.")
@@ -250,18 +257,18 @@ class FinalMultiTaskModelTrainer:
         print(f"\n📊 Evaluating final model on TEST sets (used only ONCE)...")
         dataloaders_test = {}
         # Main Task (Latent Hatred) - Test
-        main_test_ds = LatentHatredDataset(f"{self.dataset_root_dir}/latent_hatred_3class_test.csv", split="test")
+        main_test_ds = LatentHatredDataset(main_original_full_path, split="test")
         dataloaders_test["main"] = DataLoader(main_test_ds, batch_size=batch_size_final, num_workers=num_workers)
         # StereoSet Task - Test
-        stereo_test_ds = StereoSetDataset(f"{self.dataset_root_dir}/stereoset_test.csv", split="test")
+        stereo_test_ds = StereoSetDataset(stereo_original_full_path, split="test")
         dataloaders_test["stereo"] = DataLoader(stereo_test_ds, batch_size=batch_size_final, num_workers=num_workers)
         # ISarcasm Task - Test
-        sarcasm_test_ds = ISarcasmDataset(f"{self.dataset_root_dir}/isarcasm_test.csv", split="test")
+        sarcasm_test_ds = ISarcasmDataset(sarcasm_original_full_path, split="test")
         dataloaders_test["sarcasm"] = DataLoader(sarcasm_test_ds, batch_size=batch_size_final, num_workers=num_workers)
         # ImplicitFineHate Task - Test
-        fine_test_ds = ImplicitFineHateDataset(f"{self.dataset_root_dir}/implicit_fine_labels_test.csv", split="test")
+        fine_test_ds = ImplicitFineHateDataset(fine_original_full_path, split="test")
         dataloaders_test["implicit_fine"] = DataLoader(fine_test_ds, batch_size=batch_size_final, num_workers=num_workers)
-        print("Test datasets loaded.")
+        print("Test datasets loaded (with in-memory splitting).")
         
         final_test_metrics_all_tasks = evaluate_final_multitask_on_test(model, dataloaders_test, device)
 
