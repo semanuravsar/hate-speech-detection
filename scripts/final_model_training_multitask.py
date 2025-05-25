@@ -183,6 +183,8 @@ class FinalMultiTaskModelTrainer:
         num_workers = self.best_hyperparams.get('num_workers', 0) # Get from best_hyperparams
         batch_size_final = self.best_hyperparams['batch_size']
 
+        aux_task_batch_size_final = max(1, int(batch_size_final / 2))
+
         # Paths to ORIGINAL FULL CSVs
         main_original_full_path = f"{self.dataset_root_dir}/latent_hatred_3class.csv"
         stereo_original_full_path = f"{self.dataset_root_dir}/stereoset.csv"
@@ -200,19 +202,19 @@ class FinalMultiTaskModelTrainer:
         stereo_train_ds = StereoSetDataset(stereo_original_full_path, split="train")
         stereo_val_ds = StereoSetDataset(stereo_original_full_path, split="val")
         stereo_combined_ds = ConcatDataset([stereo_train_ds, stereo_val_ds])
-        dataloaders_final_train["stereo"] = DataLoader(stereo_combined_ds, batch_size=batch_size_final, shuffle=True, num_workers=num_workers)
+        dataloaders_final_train["stereo"] = DataLoader(stereo_combined_ds, batch_size=aux_task_batch_size_final, shuffle=True, num_workers=num_workers)
         
         # ISarcasm Task
         sarcasm_train_ds = ISarcasmDataset(sarcasm_original_full_path, split="train")
         sarcasm_val_ds = ISarcasmDataset(sarcasm_original_full_path, split="val")
         sarcasm_combined_ds = ConcatDataset([sarcasm_train_ds, sarcasm_val_ds])
-        dataloaders_final_train["sarcasm"] = DataLoader(sarcasm_combined_ds, batch_size=batch_size_final, shuffle=True, num_workers=num_workers)
+        dataloaders_final_train["sarcasm"] = DataLoader(sarcasm_combined_ds, batch_size=aux_task_batch_size_final, shuffle=True, num_workers=num_workers)
 
         # ImplicitFineHate Task
         fine_train_ds = ImplicitFineHateDataset(fine_original_full_path, split="train")
         fine_val_ds = ImplicitFineHateDataset(fine_original_full_path, split="val")
         fine_combined_ds = ConcatDataset([fine_train_ds, fine_val_ds])
-        dataloaders_final_train["implicit_fine"] = DataLoader(fine_combined_ds, batch_size=batch_size_final, shuffle=True, num_workers=num_workers)
+        dataloaders_final_train["implicit_fine"] = DataLoader(fine_combined_ds, batch_size=aux_task_batch_size_final, shuffle=True, num_workers=num_workers)
         print("Train+Val datasets loaded and combined.")
 
         task_weights = {
@@ -261,13 +263,13 @@ class FinalMultiTaskModelTrainer:
         dataloaders_test["main"] = DataLoader(main_test_ds, batch_size=batch_size_final, num_workers=num_workers)
         # StereoSet Task - Test
         stereo_test_ds = StereoSetDataset(stereo_original_full_path, split="test")
-        dataloaders_test["stereo"] = DataLoader(stereo_test_ds, batch_size=batch_size_final, num_workers=num_workers)
+        dataloaders_test["stereo"] = DataLoader(stereo_test_ds, batch_size=aux_task_batch_size_final, num_workers=num_workers)
         # ISarcasm Task - Test
         sarcasm_test_ds = ISarcasmDataset(sarcasm_original_full_path, split="test")
-        dataloaders_test["sarcasm"] = DataLoader(sarcasm_test_ds, batch_size=batch_size_final, num_workers=num_workers)
+        dataloaders_test["sarcasm"] = DataLoader(sarcasm_test_ds, batch_size=aux_task_batch_size_final, num_workers=num_workers)
         # ImplicitFineHate Task - Test
         fine_test_ds = ImplicitFineHateDataset(fine_original_full_path, split="test")
-        dataloaders_test["implicit_fine"] = DataLoader(fine_test_ds, batch_size=batch_size_final, num_workers=num_workers)
+        dataloaders_test["implicit_fine"] = DataLoader(fine_test_ds, batch_size=aux_task_batch_size_final, num_workers=num_workers)
         print("Test datasets loaded (with in-memory splitting).")
         
         final_test_metrics_all_tasks = evaluate_final_multitask_on_test(model, dataloaders_test, device)

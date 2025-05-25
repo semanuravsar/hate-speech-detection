@@ -36,6 +36,7 @@ def run_experiments_with_single_task_hpo_features(
     from scripts.train import main as train_trial_main_func
 
     # --- Define Search Space ---
+    """
     search_space_config = {
         "learning_rate": [3e-5],       # Example: [1e-5, 3e-5]
         "dropout": [0.2],              # Example: [0.1, 0.2, 0.3]
@@ -43,6 +44,15 @@ def run_experiments_with_single_task_hpo_features(
         "epochs_per_trial": [1],       # Example: [3, 5] # This is 'max_epochs'
         "main_weight": [1.0],          # Often fixed
         "aux_task_weight": [1.0]       # Example: [0.3, 0.5, 1.0] # A single weight for all aux tasks
+    }
+    """
+    search_space_config = {
+    "learning_rate": [1e-5, 2e-5, 3e-5, 5e-5],
+    "dropout": [0.1],
+    "batch_size": [16, 32],
+    "epochs_per_trial": [1,2,3,4,5], # More epochs for real HPO
+    "main_weight": [1.0],
+    "aux_task_weight": [0.5, 1.0, 2.0]
     }
 
     # This mapping helps bridge keys from search_space_config to keys in args_for_training_script

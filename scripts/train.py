@@ -241,17 +241,19 @@ def run_training_trial(args, trial_log_name_for_hpo=None):
     sarcasm_val = ISarcasmDataset(sarcasm_original_path, split="val")
     fine_val = ImplicitFineHateDataset(fine_original_path, split="val")
 
+    aux_task_batch_size = max(1, int(args.batch_size / 2))
+
     dataloaders_train = {
         "main": DataLoader(hate_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers),
-        "stereo": DataLoader(stereo_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers),
-        "sarcasm": DataLoader(sarcasm_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers),
-        "implicit_fine": DataLoader(fine_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+        "stereo": DataLoader(stereo_train, batch_size=aux_task_batch_size, shuffle=True, num_workers=args.num_workers),
+        "sarcasm": DataLoader(sarcasm_train, batch_size=aux_task_batch_size, shuffle=True, num_workers=args.num_workers),
+        "implicit_fine": DataLoader(fine_train, batch_size=aux_task_batch_size, shuffle=True, num_workers=args.num_workers)
     }
     dataloaders_val = {
         "main": DataLoader(hate_val, batch_size=args.batch_size, num_workers=args.num_workers),
-        "stereo": DataLoader(stereo_val, batch_size=args.batch_size, num_workers=args.num_workers),
-        "sarcasm": DataLoader(sarcasm_val, batch_size=args.batch_size, num_workers=args.num_workers),
-        "implicit_fine": DataLoader(fine_val, batch_size=args.batch_size, num_workers=args.num_workers)
+        "stereo": DataLoader(stereo_val, batch_size=aux_task_batch_size, num_workers=args.num_workers),
+        "sarcasm": DataLoader(sarcasm_val, batch_size=aux_task_batch_size, num_workers=args.num_workers),
+        "implicit_fine": DataLoader(fine_val, batch_size=aux_task_batch_size, num_workers=args.num_workers)
     }
     print("Datasets loaded for HPO trial (with in-memory splitting).")
 
