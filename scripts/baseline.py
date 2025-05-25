@@ -87,7 +87,7 @@ def train_one_epoch(model, dataloaders, optimizer, task_weights, device):
     return total_loss
 
 def run_grid_search():
-    learning_rates = [2e-5]
+    learning_rates = [1e-5, 2e-5, 3e-5]
     dropouts = [0.1]
     epoch_count = 5
     main_weights = [1.0]
@@ -96,9 +96,6 @@ def run_grid_search():
     aux_batch_size = 8
 
     aux_configs = [
-        {"stereo": True, "sarcasm": True, "fine": True},
-        {"stereo": False, "sarcasm": False, "fine": True},
-        {"stereo": True, "sarcasm": True, "fine": False},
         {"stereo": False, "sarcasm": False, "fine": False},
     ]
 
@@ -134,7 +131,7 @@ def run_grid_search():
         print(f"Train: {len(main_train_texts)} samples")
         print(f"Val:   {len(main_val_texts)} samples")
         print(f"Test:  {len(main_test)} samples")
-
+        
         test_loaders = {
             "main": DataLoader(BaseTextDataset(main_test.texts, main_test.labels), batch_size=main_batch_size)
         }

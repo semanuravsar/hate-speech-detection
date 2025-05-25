@@ -8,7 +8,7 @@ class MultiTaskBERT(nn.Module):
         self.bert = BertModel.from_pretrained(model_name)
         hidden_size = self.bert.config.hidden_size
 
-        self.classifier_main = nn.Linear(hidden_size, 2)
+        self.classifier_main = nn.Linear(hidden_size, 3)
         self.classifier_stereo = nn.Linear(hidden_size, 3)
         self.classifier_sarcasm = nn.Linear(hidden_size, 2)
         self.classifier_implicit_fine = nn.Linear(hidden_size, 7)

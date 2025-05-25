@@ -6,8 +6,8 @@ from scripts.utils import preprocess_text, encode_text
 class LatentHatredDataset(Dataset):
     def __init__(self, path):
         df = pd.read_csv(path)
-        df = df[df["label_id"] != 2].copy()
-        df["label_id"] = df["label_id"].map({0: 0, 1: 1})
+#        df = df[df["label_id"] != 2].copy()
+#        df["label_id"] = df["label_id"].map({0: 0, 1: 1})
         self.texts = [preprocess_text(text) for text in df["text"]]
         self.labels = df["label_id"].astype(int).tolist()
 

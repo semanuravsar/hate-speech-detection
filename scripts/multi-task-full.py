@@ -87,7 +87,7 @@ def train_one_epoch(model, dataloaders, optimizer, task_weights, device):
     return total_loss
 
 def run_grid_search():
-    learning_rates = [2e-5]
+    learning_rates = [1e-5]
     dropouts = [0.1]
     epoch_count = 5
     main_weights = [1.0]
@@ -97,9 +97,6 @@ def run_grid_search():
 
     aux_configs = [
         {"stereo": True, "sarcasm": True, "fine": True},
-        {"stereo": False, "sarcasm": False, "fine": True},
-        {"stereo": True, "sarcasm": True, "fine": False},
-        {"stereo": False, "sarcasm": False, "fine": False},
     ]
 
     results = []
@@ -122,7 +119,7 @@ def run_grid_search():
         print(f"Main weight: {mw}, Stereo weight: {aw_stereo}, Sarcasm weight: {aw_sarcasm}, Fine-grained weight: {aw_fine}")
 
         model = MultiTaskBERT(dropout=dropout).to(device)
-        optimizer = AdamW(model.parameters(), lr=lr)
+        optimizer = AdamW(model.parameters(), lr=lr, weight_decay=0.01)
 
         main_all = LatentHatredDataset("/home/avsar/codes-v2/datasets/latent_hatred_3class_train.csv")
         main_train_texts, main_val_texts, main_train_labels, main_val_labels = train_test_split(
@@ -134,7 +131,7 @@ def run_grid_search():
         print(f"Train: {len(main_train_texts)} samples")
         print(f"Val:   {len(main_val_texts)} samples")
         print(f"Test:  {len(main_test)} samples")
-
+        
         test_loaders = {
             "main": DataLoader(BaseTextDataset(main_test.texts, main_test.labels), batch_size=main_batch_size)
         }
@@ -216,14 +213,102 @@ def run_grid_search():
         elapsed = time.time() - start_time
         print(f"⏱️ Total time for config: {elapsed:.2f} seconds")
 
-    if best_model_state is not None:
-        model.load_state_dict(best_model_state)
-        save_checkpoint(model, optimizer, epoch_count, f"best_model_overall_{best_model_info}.pt")
-        print(f"\n💾 Saved overall best model to best_model_overall_{best_model_info}.pt with F1 = {best_overall_f1:.4f}")
-
     df = pd.DataFrame(results)
     df.to_csv("grid_search_epochwise_results.csv", index=False)
     print("\n✅ All experiments completed. Results saved to grid_search_epochwise_results.csv")
+
+
+    # === 🔁 Retrain best LR per aux weight ===
+    print("\n🔄 Starting retraining using best LR for each auxiliary weight...")
+
+    final_results = []
+    for aux_weight in aux_weights:
+        print(f"\n🎯 Retraining for auxiliary weight = {aux_weight}")
+
+        # Filter by aux weight and pick best LR
+        subset = df[df["stereo_weight"] == aux_weight]
+        if subset.empty:
+            print(f"⚠️ No results found for aux_weight={aux_weight}, skipping.")
+            continue
+        best_row = subset.loc[subset["main_val_f1"].idxmax()]
+        best_lr = best_row["lr"]
+        best_dropout = best_row["dropout"]
+        best_epoch = int(best_row["epoch"])  # Get from grid search results
+
+        print(f"📌 Best LR = {best_lr}, Dropout = {best_dropout}, up to expoch = {best_epoch}")
+
+        # Rebuild full train+val dataset
+        model = MultiTaskBERT(dropout=best_dropout).to(device)
+        optimizer = AdamW(model.parameters(), lr=best_lr, weight_decay=0.01)
+
+        # Load train+val for main
+        main_all = LatentHatredDataset("/home/avsar/codes-v2/datasets/latent_hatred_3class_train.csv")
+        main_texts = main_all.texts
+        main_labels = main_all.labels
+        main_test = LatentHatredDataset("/home/avsar/codes-v2/datasets/latent_hatred_3class_test.csv")
+        train_loaders = {
+            "main": DataLoader(BaseTextDataset(main_texts, main_labels), batch_size=main_batch_size, shuffle=True)
+        }
+        test_loaders = {
+            "main": DataLoader(BaseTextDataset(main_test.texts, main_test.labels), batch_size=main_batch_size)
+        }
+
+        # Load aux tasks
+        if aux_weight > 0:
+            stereo_all = StereoSetDataset("/home/avsar/codes-v2/datasets/stereoset_train.csv")
+            stereo_test = StereoSetDataset("/home/avsar/codes-v2/datasets/stereoset_test.csv")
+            sarcasm_all = ISarcasmDataset("/home/avsar/codes-v2/datasets/isarcasm_train.csv")
+            sarcasm_test = ISarcasmDataset("/home/avsar/codes-v2/datasets/isarcasm_test.csv")
+            fine_all = ImplicitFineHateDataset("/home/avsar/codes-v2/datasets/implicit_fine_labels_train.csv")
+            fine_test = ImplicitFineHateDataset("/home/avsar/codes-v2/datasets/implicit_fine_labels_test.csv")
+
+            train_loaders["stereo"] = DataLoader(BaseTextDataset(stereo_all.texts, stereo_all.labels), batch_size=aux_batch_size, shuffle=True)
+            train_loaders["sarcasm"] = DataLoader(BaseTextDataset(sarcasm_all.texts, sarcasm_all.labels), batch_size=aux_batch_size, shuffle=True)
+            train_loaders["implicit_fine"] = DataLoader(BaseTextDataset(fine_all.texts, fine_all.labels), batch_size=aux_batch_size, shuffle=True)
+
+            test_loaders["stereo"] = DataLoader(BaseTextDataset(stereo_test.texts, stereo_test.labels), batch_size=aux_batch_size)
+            test_loaders["sarcasm"] = DataLoader(BaseTextDataset(sarcasm_test.texts, sarcasm_test.labels), batch_size=aux_batch_size)
+            test_loaders["implicit_fine"] = DataLoader(BaseTextDataset(fine_test.texts, fine_test.labels), batch_size=aux_batch_size)
+
+        task_weights = {
+            "main": 1.0,
+            "stereo": aux_weight,
+            "sarcasm": aux_weight,
+            "implicit_fine": aux_weight
+        }
+
+        # Retrain
+        for epoch in range(1, best_epoch + 1):
+            print(f"\n🔁 Retrain Epoch {epoch}/{best_epoch}")
+            loss = train_one_epoch(model, train_loaders, optimizer, task_weights, device)
+            print(f"Loss: {loss:.4f}")
+
+        # Final test evaluation
+        test_metrics = evaluate(model, test_loaders, device)
+        print("\n📈 Final Test Metrics:")
+        for task, m in test_metrics.items():
+            print(f"{task}: Acc = {m['accuracy']:.4f}, F1 = {m['f1']:.4f}, Precision = {m['precision']:.4f}, Recall = {m['recall']:.4f}")
+
+        # Save final model
+        model_filename = f"retrained_model_aux{aux_weight}_lr{best_lr}_do{best_dropout}.pt"
+        save_checkpoint(model, optimizer, best_epoch, model_filename)
+        print(f"💾 Saved retrained model to {model_filename}")
+
+        # Save final test metrics for this aux_weight
+        for task, scores in test_metrics.items():
+            final_results.append({
+                "aux_weight": aux_weight,
+                "lr": best_lr,
+                "dropout": best_dropout,
+                "task": task,
+                **scores
+            })
+
+    # Save all final results
+    final_df = pd.DataFrame(final_results)
+    final_df.to_csv("final_retrain_test_metrics.csv", index=False)
+    print("\n✅ Final retrained test results saved to final_retrain_test_metrics.csv")
+
 
 if __name__ == "__main__":
     run_grid_search()
