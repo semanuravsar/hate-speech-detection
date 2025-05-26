@@ -91,15 +91,12 @@ def run_grid_search():
     dropouts = [0.1]
     epoch_count = 5
     main_weights = [1.0]
-    aux_weights = [0.5, 1.0, 2.0]
+    aux_weights = [0.0]
     main_batch_size = 32
     aux_batch_size = 8
 
     aux_configs = [
-        {"stereo": True, "sarcasm": True, "fine": True},
-        {"stereo": False, "sarcasm": False, "fine": True},
-        {"stereo": True, "sarcasm": True, "fine": False},
-        {"stereo": False, "sarcasm": False, "fine": False},
+        {"stereo": False, "sarcasm": False, "fine": False}
     ]
 
     results = []
@@ -213,17 +210,24 @@ def run_grid_search():
 
             results.append(result_row)
 
+        # Save model at end of each config run
+        config_name = f"model_lr{lr}_do{dropout}_mb{main_batch_size}_ab{aux_batch_size}_mw{mw}_st{aw_stereo}_sa{aw_sarcasm}_fi{aw_fine}_baseline.pt"
+        save_checkpoint(model, optimizer, epoch_count, config_name)
+        print(f"💾 Saved model for current config to {config_name}")
+
         elapsed = time.time() - start_time
         print(f"⏱️ Total time for config: {elapsed:.2f} seconds")
 
-    if best_model_state is not None:
-        model.load_state_dict(best_model_state)
-        save_checkpoint(model, optimizer, epoch_count, f"best_model_overall_{best_model_info}.pt")
-        print(f"\n💾 Saved overall best model to best_model_overall_{best_model_info}.pt with F1 = {best_overall_f1:.4f}")
-
     df = pd.DataFrame(results)
-    df.to_csv("grid_search_epochwise_results.csv", index=False)
-    print("\n✅ All experiments completed. Results saved to grid_search_epochwise_results.csv")
+    df.to_csv("grid_search_epochwise_results_baseline.csv", index=False)
+    print("\n✅ All experiments completed. Results saved to grid_search_epochwise_results_baseline.csv")
 
 if __name__ == "__main__":
     run_grid_search()
+
+
+"""    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        save_checkpoint(model, optimizer, epoch_count, f"best_model_overall_{best_model_info}.pt")
+        print(f"\n💾 Saved overall best model to best_model_overall_{best_model_info}.pt with F1 = {best_overall_f1:.4f}")
+"""
