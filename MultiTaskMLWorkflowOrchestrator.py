@@ -147,9 +147,9 @@ class MultiTaskMLWorkflowOrchestrator:
             # "num_workers": 4 # If you want to control this from orchestrator
         }
 
-        best_hpo_config, best_hpo_score, _ = search_v2.run_experiments_with_single_task_hpo_features(
-            hpo_output_base_dir=str(hpo_run_output_dir),
-            fixed_params_for_hpo_run=fixed_hpo_params_for_run # Use the variable defined above
+        best_hpo_config, best_hpo_score, best_hpo_epoch_num = search_v2.run_experiments_with_single_task_hpo_features(
+        hpo_output_base_dir=str(hpo_run_output_dir),
+        fixed_params_for_hpo_run=fixed_hpo_params_for_run
         )
 
         if not best_hpo_config:
@@ -159,12 +159,13 @@ class MultiTaskMLWorkflowOrchestrator:
         self.workflow_state['hpo_summary_results'] = {
             'best_overall_hpo_config_found': best_hpo_config,
             'best_overall_hpo_primary_score_reported': best_hpo_score,
+            'actual_best_epoch_num_from_hpo': best_hpo_epoch_num,
             'hpo_main_artifact_directory': str(hpo_run_output_dir) # Base dir for HPO runs
         }
         self._complete_step("Hyperparameter Search (Multi-Task)")
         return best_hpo_config # Return the best config for the next step
 
-    def step3_train_and_evaluate_final_model(self, best_hpo_config):
+    def step3_train_and_evaluate_final_model(self, best_hpo_config, actual_best_epoch_num=None):
         self._start_step("Final Model Training & Test Evaluation")
         final_model_run_output_dir = self.workflow_run_dir / "final_trained_model_artifacts"
         final_model_run_output_dir.mkdir(exist_ok=True)
@@ -177,7 +178,8 @@ class MultiTaskMLWorkflowOrchestrator:
         final_trainer = FinalMultiTaskModelTrainer(
             dataset_root_dir=str(self.dataset_root_dir),         # CORRECTED name
             best_hyperparams_dict=best_hpo_config,
-            final_model_output_dir=str(final_model_run_output_dir) # CORRECTED name
+            final_model_output_dir=str(final_model_run_output_dir), # CORRECTED name
+            actual_best_epoch_num_for_final_training=actual_best_epoch_num # NEW argument
         )
         final_test_metrics = final_trainer.run_final_training_and_evaluation()
 
@@ -256,7 +258,7 @@ class MultiTaskMLWorkflowOrchestrator:
             dataset_summary_info = self.step1_verify_all_datasets() # TODO: Implement properly
 
             # Step 2
-            best_config_from_hpo = self.step2_run_hyperparameter_search()
+            best_config_from_hpo, best_epoch_num_from_hpo = self.step2_run_hyperparameter_search()
             if not best_config_from_hpo: # HPO should raise error if it fails, but double check
                 print("❌ Critical Error: HPO step did not return a best configuration. Workflow cannot continue.")
                 self.workflow_state['error_message'] = "HPO failed to find a best configuration."
@@ -265,7 +267,7 @@ class MultiTaskMLWorkflowOrchestrator:
                 return None
 
             # Step 3
-            final_model_results_on_test = self.step3_train_and_evaluate_final_model(best_config_from_hpo)
+            final_model_results_on_test = self.step3_train_and_evaluate_final_model(best_config_from_hpo, best_epoch_num_from_hpo)
             
             # Step 4
             overall_workflow_summary = self.step4_generate_final_workflow_report()

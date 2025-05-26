@@ -50,7 +50,7 @@ def run_experiments_with_single_task_hpo_features(
     "learning_rate": [1e-5, 2e-5, 3e-5, 5e-5],
     "dropout": [0.1],
     "batch_size": [16, 32],
-    "epochs_per_trial": [1,2,3,4,5], # More epochs for real HPO
+    #"epochs_per_trial": [1,2,3,4,5], # More epochs for real HPO
     "main_weight": [1.0],
     "aux_task_weight": [0.5, 1.0, 2.0]
     }
@@ -61,7 +61,7 @@ def run_experiments_with_single_task_hpo_features(
         "learning_rate": "lr",
         "dropout": "dropout", # Name matches
         "batch_size": "batch_size", # Name matches
-        "epochs_per_trial": "epochs",
+        #"epochs_per_trial": "epochs",
         "main_weight": "main_weight", # Name matches
         # If 'aux_task_weight' from search_space_config maps to multiple args (stereo_weight, sarcasm_weight etc.)
         # for summary purposes, we might pick one or list them.
@@ -71,13 +71,15 @@ def run_experiments_with_single_task_hpo_features(
     # Get the original tunable parameter keys from the search space definition
     tunable_param_keys_from_search_space = list(search_space_config.keys())
 
+    MAX_EPOCHS_FOR_ALL_TRIALS = 5
 
     # --- Fixed Parameters for all HPO trials for THIS HPO RUN ---
     default_fixed_params = {
         "dataset_root_dir": "/path/to/default/datasets_on_linux_placeholder", # Will be overridden by orchestrator
         "num_workers": 4,  # SET TO A POSITIVE VALUE FOR PERFORMANCE
         "weight_decay": 0.01,
-        "resume_trial": False
+        "resume_trial": False, 
+        "epochs": MAX_EPOCHS_FOR_ALL_TRIALS,  # This is the max epochs for all trials, can be overridden by search_space_config
     }
     if fixed_params_for_hpo_run: # Orchestrator can pass fixed params like the correct dataset_root_dir
         default_fixed_params.update(fixed_params_for_hpo_run)
@@ -121,7 +123,7 @@ def run_experiments_with_single_task_hpo_features(
             dataset_dir=full_config_for_this_trial["dataset_root_dir"],
             resume=full_config_for_this_trial["resume_trial"],
             batch_size=full_config_for_this_trial["batch_size"],
-            epochs=full_config_for_this_trial["epochs_per_trial"],
+            epochs=full_config_for_this_trial["epochs"],
             lr=full_config_for_this_trial["learning_rate"],
             dropout=full_config_for_this_trial["dropout"],
             weight_decay=full_config_for_this_trial["weight_decay"],

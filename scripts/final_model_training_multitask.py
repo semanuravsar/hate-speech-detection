@@ -153,11 +153,14 @@ def evaluate_final_multitask_on_test(model, test_dataloaders, device):
 
 
 class FinalMultiTaskModelTrainer:
-    def __init__(self, dataset_root_dir, best_hyperparams_dict, final_model_output_dir):
+    def __init__(self, dataset_root_dir, best_hyperparams_dict, final_model_output_dir, actual_best_epoch_num_for_final_training=None):
         self.dataset_root_dir = Path(dataset_root_dir)
         self.best_hyperparams = best_hyperparams_dict # This is a dictionary
         self.final_model_output_dir = Path(final_model_output_dir)
+        #Store the actual best epoch number
+        self.actual_best_epoch_num = actual_best_epoch_num_for_final_training
         self.final_model_output_dir.mkdir(parents=True, exist_ok=True)
+        
 
         print(f"🛠️ FinalMultiTaskModelTrainer initialized.")
         print(f"  Dataset root: {self.dataset_root_dir}")
@@ -227,7 +230,14 @@ class FinalMultiTaskModelTrainer:
         # Use 'epochs_per_trial' from best_hyperparams as the number of epochs for final training
         # Or, if HPO returned a specific 'best_overall_trial_best_epoch', that could be used,
         # but often final training is done for the full duration defined by the best config.
-        num_final_epochs = self.best_hyperparams['epochs'] 
+        if self.actual_best_epoch_num is not None and self.actual_best_epoch_num > 0:
+            num_final_epochs = self.actual_best_epoch_num
+            print(f"Using actual best epoch number from HPO for final training: {num_final_epochs} epochs.")
+        else:
+            # Fallback to epochs defined in best_hyperparams (which was MAX_EPOCHS_FOR_ALL_TRIALS)
+            # Or set a default if actual_best_epoch_num is somehow None
+            num_final_epochs = self.best_hyperparams.get('epochs', 32) # Fallback to 3 or another default
+            print(f"Warning: Actual best epoch number not provided or invalid. Using epochs from HPO config (max trial epochs) or default: {num_final_epochs} epochs.")
         
         print(f"\n🎯 Training final model for {num_final_epochs} epochs using combined train+val data...")
         final_model_training_history = []
@@ -308,6 +318,7 @@ if __name__ == '__main__':
                          'main_weight', 'stereo_weight', # These are the arg names for weights
                          'sarcasm_weight', 'implicit_fine_weight'] # These are the arg names for weights
         missing_keys = [k for k in required_keys if k not in best_hpo_params]
+        actual_best_epoch = best_hpo_params.get('epochs') # Default for standalone
         if missing_keys:
             print(f"ERROR: The best_hyperparams_json is missing required keys (should match HPO trial args): {missing_keys}")
             print(f"It should contain the full configuration used for the best HPO trial's args_for_training_script.")
@@ -317,7 +328,9 @@ if __name__ == '__main__':
     trainer_instance = FinalMultiTaskModelTrainer(
         dataset_root_dir=args_cli.dataset_root_dir,
         best_hyperparams_dict=best_hpo_params, # Pass the loaded dictionary
-        final_model_output_dir=args_cli.final_model_output_dir
+        final_model_output_dir=args_cli.final_model_output_dir,
+        actual_best_epoch_num_for_final_training=actual_best_epoch # Pass it
+
     )
     final_test_results = trainer_instance.run_final_training_and_evaluation()
     
