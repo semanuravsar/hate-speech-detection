@@ -40,7 +40,7 @@ def main():
 
     # === Load model ===
     model = MultiTaskBERT(dropout=0.1).to(device)
-    checkpoint_path = "results/best_model_overall_lr2e-05_do0.1_mb32_ab8_mw1.0_st0_sa0_fi1.0.pt"
+    checkpoint_path = "results/baseline.pt"
     load_checkpoint(model, path=checkpoint_path)
 
     # === Load test set ===

@@ -211,7 +211,7 @@ def run_grid_search():
             results.append(result_row)
 
         # Save model at end of each config run
-        config_name = f"model_lr{lr}_do{dropout}_mb{main_batch_size}_ab{aux_batch_size}_mw{mw}_st{aw_stereo}_sa{aw_sarcasm}_fi{aw_fine}.pt"
+        config_name = f"model_lr{lr}_do{dropout}_mb{main_batch_size}_ab{aux_batch_size}_mw{mw}_st{aw_stereo}_sa{aw_sarcasm}_fi{aw_fine}_yorgunum.pt"
         save_checkpoint(model, optimizer, epoch_count, config_name)
         print(f"💾 Saved model for current config to {config_name}")
 
