@@ -18,8 +18,11 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("📦 Loading ToxiGen dataset...")
 toxigen = load_dataset("toxigen/toxigen-data", name="train", split="train")
-
+toxigen = toxigen.shuffle(seed=42).select(range(10000))
 print("🧠 Loading model checkpoint...")
+from collections import Counter
+print(Counter(toxigen['prompt_label']))
+
 model = MultiTaskBERT()
 checkpoint = torch.load(CHECKPOINT_PATH, map_location=DEVICE)
 model.load_state_dict(checkpoint["model_state_dict"])
@@ -29,7 +32,7 @@ model.eval()
 tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
 
 all_preds = []
-all_labels = []
+all_labels = [] 
 
 print("🔍 Running inference on ToxiGen...")
 for i, row in enumerate(toxigen):

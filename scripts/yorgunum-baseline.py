@@ -87,7 +87,7 @@ def train_one_epoch(model, dataloaders, optimizer, task_weights, device):
     return total_loss
 
 def run_grid_search():
-    learning_rates = [2e-5]
+    learning_rates = [1e-5, 2e-5, 5e-5]
     dropouts = [0.1]
     epoch_count = 5
     main_weights = [1.0]
