@@ -1,0 +1,111 @@
+ checkpoint = torch.load(model_path, map_location=DEVICE)
+🚀 Starting 4-Model Implicit Hate Misclassification Analysis
+======================================================================
+📦 Loading test datasets...
+📊 Original dataset size: 21480
+Label distribution in original dataset:
+label_id
+0    13291
+1     7100
+2     1089
+Name: count, dtype: int64
+📊 Sampled dataset size: 3222 (15% of original)
+Label distribution in sampled dataset:
+label_id
+0    1994
+1    1065
+2     163
+Name: count, dtype: int64
+🏷️ Fine-grained categories found:
+  - white_grievance
+  - irony
+  - stereotypical
+  - incitement
+  - other
+  - threatening
+  - inferiority
+
+📊 Dataset Info:
+  - General test samples: 3222
+  - Fine-grained samples: 6346
+  - Unique fine-grained categories: 7
+
+
+🔍 RESULTS FOR AW_0.5
+============================================================
+Category             Confused %   Count    Total   
+------------------------------------------------------------
+other                50.0         7        14      
+white_grievance      26.2         58       221     
+incitement           25.3         48       190     
+stereotypical        18.4         33       179     
+irony                3.9          5        129     
+inferiority          3.3          4        123     
+threatening          2.2          2        89      
+
+📊 SUMMARY FOR aw_0.5:
+----------------------------------------
+For aw_0.5, the implicit category most confused with non-hate was Other (50.0%), followed by White_Grievance (26.2%), Incitement (25.3%), Stereotypical (18.4%), Irony (3.9%), and Inferiority (3.3%).
+
+
+🔍 RESULTS FOR AW_1.0
+============================================================
+Category             Confused %   Count    Total   
+------------------------------------------------------------
+other                64.3         9        14      
+white_grievance      27.1         60       221     
+incitement           25.8         49       190     
+stereotypical        19.0         34       179     
+irony                7.8          10       129     
+inferiority          3.3          4        123     
+threatening          2.2          2        89      
+
+📊 SUMMARY FOR aw_1.0:
+----------------------------------------
+For aw_1.0, the implicit category most confused with non-hate was Other (64.3%), followed by White_Grievance (27.1%), Incitement (25.8%), Stereotypical (19.0%), Irony (7.8%), and Inferiority (3.3%).
+
+
+🔍 RESULTS FOR AW_2.0
+============================================================
+Category             Confused %   Count    Total   
+------------------------------------------------------------
+other                78.6         11       14      
+incitement           37.4         71       190     
+white_grievance      30.8         68       221     
+stereotypical        27.9         50       179     
+inferiority          9.8          12       123     
+irony                9.3          12       129     
+threatening          2.2          2        89      
+
+📊 SUMMARY FOR aw_2.0:
+----------------------------------------
+For aw_2.0, the implicit category most confused with non-hate was Other (78.6%), followed by Incitement (37.4%), White_Grievance (30.8%), Stereotypical (27.9%), Inferiority (9.8%), and Irony (9.3%).
+
+
+
+🔍 RESULTS FOR BASELINE
+============================================================
+Category             Confused %   Count    Total   
+------------------------------------------------------------
+other                35.7         5        14      
+incitement           32.1         61       190     
+white_grievance      29.9         66       221     
+stereotypical        24.6         44       179     
+irony                10.9         14       129     
+inferiority          10.6         13       123     
+threatening          2.2          2        89      
+
+📊 SUMMARY FOR baseline:
+----------------------------------------
+For baseline, the implicit category most confused with non-hate was Other (35.7%), followed by Incitement (32.1%), White_Grievance (29.9%), Stereotypical (24.6%), Irony (10.9%), and Inferiority (10.6%).
+
+💾 Saving results...
+💾 Detailed results saved to 'all_models_detailed_misclassifications.csv'
+💾 Summary results saved to 'all_models_confusion_summary.csv'
+
+✅ Analysis complete!
+📁 Files created:
+  - all_models_detailed_misclassifications.csv
+  - all_models_confusion_summary.csv
+  - model_comparison_heatmap.png
+  - individual_model_confusion.png

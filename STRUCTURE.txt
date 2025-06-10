@@ -1,0 +1,35 @@
+There are 3 main scripts performing training for the 3 experiments 
+mentioned in the report and the video:
+
+1. scripts/mtl-main-local.py
+2. scripts/baseline-main-local.py
+
+These two together does training for different mtl weights and also for baseline
+it also calculates the test performance that produces the results for table 1 in 
+our report
+
+3. scripts/ablation-study-local.py
+
+This code performs the ablation study and produces the results for table 2
+
+(We have run the codes on cluster since the memory of our local computer 
+was not enough to finish the training. Hence, the local versions are 
+created just for the video and have not been tested untill the end, the only
+difference is paths of the dataset, nevertheless case of any errors, the 
+versions that can be run directly on the cluster are:
+
+1. scripts/mtl-main-cluster.py
+2. scripts/baseline-main-cluster.py
+3. scripts/ablation-study-cluster.py)
+
+Furthermore, we have the test scripts
+
+1. results/test-toxigen.py
+
+Calculates the performance of the trained models on toxigen
+Produces the results for table 3
+
+2. results/misclassification_fine_grain.py
+
+Calculates the confusion of each type of implicit hate
+Produces the results for table 4
