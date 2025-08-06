@@ -3,7 +3,6 @@
 __pycache__/
 *.pyc
 *.pt
-*.csv
 *.zip
 .DS_Store
 checkpoint.pt
